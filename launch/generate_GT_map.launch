@@ -1,0 +1,26 @@
+<launch>
+    
+    <arg name="initial_pos_x" default="-1.5" />
+    <arg name="initial_pos_y" default="1.5" />
+    <arg name="initial_pos_a" default="0.0" />
+    <arg name="map_resolution" default="0.025" />
+    <!--<arg name="z_pos" default="0.0" />-->
+    <arg name="mapfile" default="Maze" />
+    <arg name="out_file" default="Maze" />
+
+
+    <!-- Parameters -->
+    <param name="initial_pos_x" value="$(arg initial_pos_x)" />
+    <param name="initial_pos_y" value="$(arg initial_pos_y)" />
+    <param name="initial_pos_a" value="$(arg initial_pos_a)" />
+
+
+    <!-- Map generator -->
+    <node pkg="simple_robot_simulator" type="map_GT_generator.py" name="generator" output="screen">
+    <!--<node pkg="simple_robot_simulator" type="simulator_GT.py" name="simulator" output="screen">-->
+        <param name="mapfile" value="$(find simple_robot_simulator)/worlds/$(arg mapfile)/model.sdf" />
+        <param name="map_resolution" value="$(arg map_resolution)" />
+        <param name="out_file" value="$(find simple_robot_simulator)/maps/$(arg out_file).pgm" />
+    </node>
+
+</launch>
