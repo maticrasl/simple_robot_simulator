@@ -6,6 +6,7 @@ from simple_robot_simulator.srv import Benchmark
 from math import nan, sqrt
 import tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from tf2_msgs.msg import TFMessage
 import numpy as np
 import time
 import math
@@ -32,17 +33,11 @@ class benchmarker:
         # self.gt_file = open(self.kitti_path + "/ground_truth/" + self.mapfile + ".txt", 'w')
         self.odom_file = open(self.kitti_path + "/odom/" + self.mapfile + ".txt", 'w')
 
-        #rospy.Subscriber('/clicked_point', PointStamped, self.get_clicked_point)
-        # rospy.Subscriber('/ground_truth', Odometry, self.handle_get_gt, self.gt_file)
-        rospy.Subscriber('/odom', Odometry, self.handle_get_odom, self.odom_file)
+        # rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, self.gt_file)
+        rospy.Subscriber('/tf_old', TFMessage, self.handle_get_tf_old)
         self.tf_listener = tf.TransformListener()
         self.odom_broadcaster = tf.TransformBroadcaster()
-        s = rospy.Service('get_benchmarking', Benchmark, self.handle_get_benchmarking)
-        self.global_benchmark = 0
-        self.local_benchmark = 0
-        self.N = 0
 
-        # (self.last_trans, self.last_rot) = self.tf_listener.lookupTransform('ground_truth', 'base_link', rospy.Time(0))
         self.publish_first_tf()
 
         rospy.spin()
@@ -92,7 +87,7 @@ class benchmarker:
         )
 
 
-    def handle_get_gt(self, data, out_file):
+    def gt_write_kitti(self, data, out_file):
         trans = [data.pose.pose.position.x, data.pose.pose.position.y]
         rot = [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]
         th = euler_from_quaternion(rot)[2]
@@ -111,14 +106,14 @@ class benchmarker:
         out_file.write('\n')
 
 
-    def handle_get_odom(self, data, out_file):
-        (trans, rot) = self.tf_listener.lookupTransform('/base_link', '/world', rospy.Time.now())
-        print(trans)
-        print(rot)
+    def odom_write_kitti(self, timestamp):
+        """ Get SLAM position and write it to kitti file. """
+        out_file = self.odom_file
 
-        trans = [data.pose.pose.position.x, data.pose.pose.position.y]
-        rot = [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]
-        th = euler_from_quaternion(rot)[2]
+        self.tf_listener.waitForTransform("/world", "/base_link", timestamp, rospy.Duration(4.0))
+        (trans, rot) = self.tf_listener.lookupTransform('/world', '/base_link', timestamp)
+
+        th = euler_from_quaternion([0, 0, rot[2], rot[3]])[2]
 
         matrix = np.array([[1, 0, 0, trans[0]], [0, 1, 0, trans[1]], [0, 0, 1, 0], [0, 0, 0, 1]])
         matrix_rot = np.array([[math.cos(th), -math.sin(th), 0, 0], [math.sin(th), math.cos(th), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
@@ -128,24 +123,46 @@ class benchmarker:
         kitti_line = matrix[:3, :].reshape(12)
         kitti_line_string = " ".join([str(i) for i in kitti_line])
 
-        print(kitti_line_string)
-
         out_file.write(kitti_line_string)
         out_file.write('\n')
 
-        self.publish_tf(data)
-
-
-    def handle_get_benchmarking(self, req):
-        if req.type == 0:
-            return self.global_benchmark / max(self.N, 1)
-        else:
-            return self.local_benchmark / max(self.N, 1)
+        pass
 
 
     def finish_benchmarking(self):
         self.gt_file.close()
         self.odom_file.close()
+
+
+    def publish_odometry(self, transform: TFMessage) -> None:
+        """ Publish the robot movement over tf for the SLAM algorithm to use it. """
+        self.odom_broadcaster.sendTransform(
+            (transform.transform.translation.x, transform.transform.translation.y, 0.),
+            (0, 0, transform.transform.rotation.z, transform.transform.rotation.w),
+            transform.header.stamp,
+            "base_link",
+            "odom"
+        )
+
+        self.odom_broadcaster.sendTransform(
+            (0, 0, 0),
+            quaternion_from_euler(0, 0, 0),
+            transform.header.stamp,
+            "laser_frame",
+            "base_link"
+        )
+
+
+    def handle_get_tf_old(self, data):
+        transform = data.transforms[0]
+
+        if transform.header.frame_id == "odom" and transform.child_frame_id == "base_link":
+            self.publish_odometry(transform)
+            
+            # Get odom transform for kitti file
+            self.odom_write_kitti(transform.header.stamp)
+
+        pass
 
 
 if __name__ == '__main__':
