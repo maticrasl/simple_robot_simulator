@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 import rospy
-from geometry_msgs.msg import Twist, Point, Pose, Quaternion, Vector3, PointStamped, PoseStamped
+
+import math
+import numpy as np
+
 from nav_msgs.msg import Odometry
-from simple_robot_simulator.srv import Benchmark
-from math import nan, sqrt
 import tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_msgs.msg import TFMessage
-import numpy as np
-import time
-import math
 
 
-# message = "0"
 scan_angle = 270
 scan_step = 3
 scan_angle_rad = np.deg2rad(scan_angle)
@@ -23,7 +20,7 @@ scan_range_min = 0.001
 scan_range_max = 1.5
 
 
-class benchmarker:
+class Benchmarker:
     def __init__(self):
         rospy.init_node('benchmarker')
 
@@ -41,9 +38,10 @@ class benchmarker:
         self.publish_first_tf()
 
         rospy.spin()
+        pass
 
 
-    def publish_first_tf(self):
+    def publish_first_tf(self) -> None:
         timestamp = rospy.Time.now()
 
         print("Printing first tf transform")
@@ -63,31 +61,11 @@ class benchmarker:
             "laser_frame",
             "base_link"
         )
+        pass
 
 
-    def publish_tf(self, odom):
-        print("publishing tf")
-
-        timestamp = rospy.Time.now()
-
-        self.odom_broadcaster.sendTransform(
-            (odom.pose.pose.position.x, odom.pose.pose.position.y, 0),
-            (0, 0, odom.pose.pose.orientation.z, odom.pose.pose.orientation.w),
-            timestamp,
-            "base_link",
-            "odom"
-        )
-
-        self.odom_broadcaster.sendTransform(
-            (0, 0, 0),
-            quaternion_from_euler(0, 0, 0),
-            timestamp,
-            "laser_frame",
-            "base_link"
-        )
-
-
-    def gt_write_kitti(self, data, out_file):
+    def gt_write_kitti(self, data: Odometry, out_file: str) -> None:
+        """ Get GT position and write it to kitti file. """
         trans = [data.pose.pose.position.x, data.pose.pose.position.y]
         rot = [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]
         th = euler_from_quaternion(rot)[2]
@@ -100,13 +78,12 @@ class benchmarker:
         kitti_line = matrix[:3, :].reshape(12)
         kitti_line_string = " ".join([str(i) for i in kitti_line])
 
-        print(kitti_line_string)
-
         out_file.write(kitti_line_string)
         out_file.write('\n')
+        pass
 
 
-    def odom_write_kitti(self, timestamp):
+    def odom_write_kitti(self, timestamp) -> None:
         """ Get SLAM position and write it to kitti file. """
         out_file = self.odom_file
 
@@ -125,13 +102,13 @@ class benchmarker:
 
         out_file.write(kitti_line_string)
         out_file.write('\n')
-
         pass
 
 
-    def finish_benchmarking(self):
+    def finish_benchmarking(self) -> None:
         self.gt_file.close()
         self.odom_file.close()
+        pass
 
 
     def publish_odometry(self, transform: TFMessage) -> None:
@@ -151,26 +128,28 @@ class benchmarker:
             "laser_frame",
             "base_link"
         )
+        pass
 
 
-    def handle_get_tf_old(self, data):
+    def handle_get_tf_old(self, data) -> None:
         transform = data.transforms[0]
 
         if transform.header.frame_id == "odom" and transform.child_frame_id == "base_link":
             self.publish_odometry(transform)
-            
+
             # Get odom transform for kitti file
             self.odom_write_kitti(transform.header.stamp)
+        pass
 
+
+def main():
+    try:
+        Benchmarker()
+    except rospy.ROSInterruptException:
+        Benchmarker.finish_benchmarking()
+        print('\n')
         pass
 
 
 if __name__ == '__main__':
-    message = "0"
-
-    try:
-        benchmarker()
-    except rospy.ROSInterruptException:
-        benchmarker.finish_benchmarking()
-        print('\n')
-        pass
+    main()
