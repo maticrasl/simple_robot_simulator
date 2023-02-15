@@ -26,12 +26,15 @@ class Benchmarker:
 
         self.kitti_path = rospy.get_param('~kitti_path', '/home/matic/Documents/Magistrska/Benchmarking')
         self.mapfile = rospy.get_param('~mapfile')
+        generate_gt = int(rospy.get_param('~generate_gt', "0"))
 
-        # self.gt_file = open(self.kitti_path + "/ground_truth/" + self.mapfile + ".txt", 'w')
-        self.odom_file = open(self.kitti_path + "/odom/" + self.mapfile + ".txt", 'w')
+        if generate_gt == 1:
+            self.gt_file = open(f"{self.kitti_path}/{self.mapfile}/ground_truth.txt", 'w')
+            rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, self.gt_file)
+        else:
+            self.odom_file = open(f"{self.kitti_path}/{self.mapfile}/odom.txt", 'w')
+            rospy.Subscriber('/tf_old', TFMessage, self.handle_get_tf_old)
 
-        # rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, self.gt_file)
-        rospy.Subscriber('/tf_old', TFMessage, self.handle_get_tf_old)
         self.tf_listener = tf.TransformListener()
         self.odom_broadcaster = tf.TransformBroadcaster()
 
