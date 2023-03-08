@@ -4,6 +4,7 @@ import rospy
 import math
 import numpy as np
 
+from geometry_msgs.msg import Point, Quaternion
 from nav_msgs.msg import Odometry
 import tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
@@ -26,9 +27,9 @@ class Benchmarker:
 
         self.kitti_path = rospy.get_param('~kitti_path', '/home/matic/Documents/Magistrska/Benchmarking')
         self.mapfile = rospy.get_param('~mapfile')
-        generate_gt = int(rospy.get_param('~generate_gt', "0"))
+        self.generate_gt = int(rospy.get_param('~generate_gt', "0"))
 
-        if generate_gt == 1:
+        if self.generate_gt == 1:
             self.gt_file = open(f"{self.kitti_path}/{self.mapfile}/ground_truth.txt", 'w')
             rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, self.gt_file, queue_size=50)
         else:
@@ -38,6 +39,7 @@ class Benchmarker:
         self.tf_listener = tf.TransformListener()
         self.odom_broadcaster = tf.TransformBroadcaster()
 
+        self.saved_initial_pose = False
         self.publish_first_tf()
 
         rospy.spin()
@@ -49,9 +51,12 @@ class Benchmarker:
 
         print("Printing first tf transform")
 
+        position = Point(rospy.get_param("initial_pos_x", "0"), rospy.get_param("initial_pos_y", "0"), 0)
+        orientation = quaternion_from_euler(0, 0, float(rospy.get_param("initial_pos_a", "0")))
+
         self.odom_broadcaster.sendTransform(
-            (rospy.get_param("initial_pos_x", "0"), rospy.get_param("initial_pos_y", "0"), 0),
-            quaternion_from_euler(0, 0, float(rospy.get_param("initial_pos_a", "0"))),
+            (position.x, position.y, position.z),
+            orientation,
             timestamp,
             "base_link",
             "odom"
@@ -67,8 +72,10 @@ class Benchmarker:
         pass
 
 
-    def gt_write_kitti(self, data: Odometry, out_file: str) -> None:
+    def gt_write_kitti(self, data: Odometry) -> None:
         """ Get GT position and write it to kitti file. """
+        out_file = self.gt_file
+
         trans = [data.pose.pose.position.x, data.pose.pose.position.y]
         rot = [data.pose.pose.orientation.x, data.pose.pose.orientation.y, data.pose.pose.orientation.z, data.pose.pose.orientation.w]
         th = euler_from_quaternion(rot)[2]
