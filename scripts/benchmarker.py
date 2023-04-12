@@ -6,6 +6,7 @@ import numpy as np
 
 from geometry_msgs.msg import Point, Quaternion
 from nav_msgs.msg import Odometry
+import os
 import tf
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_msgs.msg import TFMessage
@@ -25,15 +26,18 @@ class Benchmarker:
     def __init__(self):
         rospy.init_node('benchmarker')
 
-        self.kitti_path = rospy.get_param('~kitti_path', '/home/matic/Documents/Magistrska/Benchmarking')
+        self.benchmarking_path = rospy.get_param('~kitti_path', '/home/matic/Documents/Magistrska/Benchmarking')
         self.mapfile = rospy.get_param('~mapfile')
         self.generate_gt = int(rospy.get_param('~generate_gt', "0"))
 
+        kitti_path = f"{self.benchmarking_path}/kitti_files/{self.mapfile}/"
+        os.makedirs(kitti_path, exist_ok=True)
+
         if self.generate_gt == 1:
-            self.gt_file = open(f"{self.kitti_path}/{self.mapfile}/ground_truth.txt", 'w')
+            self.gt_file = open(kitti_path + "ground_truth.txt", 'w')
             rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, self.gt_file, queue_size=50)
         else:
-            self.odom_file = open(f"{self.kitti_path}/{self.mapfile}/odom.txt", 'w')
+            self.odom_file = open(kitti_path + "odom.txt", 'w')
             rospy.Subscriber('/tf_old', TFMessage, self.handle_get_tf_old, queue_size=50)
 
         self.tf_listener = tf.TransformListener()
