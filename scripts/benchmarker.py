@@ -35,7 +35,7 @@ class Benchmarker:
 
         if self.generate_gt == 1:
             self.gt_file = open(kitti_path + "ground_truth.txt", 'w')
-            rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, self.gt_file, queue_size=50)
+            rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, queue_size=50)
         else:
             self.odom_file = open(kitti_path + "odom.txt", 'w')
             rospy.Subscriber('/tf_old', TFMessage, self.handle_get_tf_old, queue_size=50)
