@@ -12,16 +12,6 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from tf2_msgs.msg import TFMessage
 
 
-scan_angle = 270
-scan_step = 3
-scan_angle_rad = np.deg2rad(scan_angle)
-scan_step_rad = np.deg2rad(scan_step)
-scan_average = 1
-laser_frequency = 1
-scan_range_min = 0.001
-scan_range_max = 1.5
-
-
 class Benchmarker:
     def __init__(self):
         rospy.init_node('benchmarker')
