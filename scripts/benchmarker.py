@@ -110,8 +110,10 @@ class Benchmarker:
 
 
     def finish_benchmarking(self) -> None:
-        self.gt_file.close()
-        self.odom_file.close()
+        if self.generate_gt:
+            self.gt_file.close()
+        else:
+            self.odom_file.close()
         pass
 
 
