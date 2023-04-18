@@ -2,7 +2,7 @@
 import sys
 
 
-def fix_file(kitti_file: str, initial_pos_x: float, initial_pos_y: float, file_content: str):
+def fix_file(kitti_file: str, initial_pos_x: float, initial_pos_y: float, file_content: str) -> None:
     first_line = f'1.0 0.0 0.0 {initial_pos_x} 0.0 1.0 0.0 {initial_pos_y} 0.0 0.0 1.0 0.0'
 
     out_file = open(kitti_file, 'w')
