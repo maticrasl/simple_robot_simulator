@@ -165,6 +165,7 @@ catkin_install_python(PROGRAMS
   scripts/simulator_GT.py
   scripts/map_GT_generator.py
   scripts/benchmarker.py
+  scripts/benchmarker_offline.py
   scripts/tf_broadcaster.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
