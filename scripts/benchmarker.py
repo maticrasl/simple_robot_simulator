@@ -47,8 +47,6 @@ class Benchmarker:
     def publish_first_tf(self) -> None:
         timestamp = rospy.Time.now()
 
-        print("Printing first tf transform")
-
         position = Point(rospy.get_param("initial_pos_x", "0"), rospy.get_param("initial_pos_y", "0"), 0)
         orientation = quaternion_from_euler(0, 0, float(rospy.get_param("initial_pos_a", "0")))
 
@@ -91,7 +89,6 @@ class Benchmarker:
 
     def odom_write_kitti(self, transform_matrix: np.ndarray) -> None:
         """ Get SLAM position and write it to kitti file. """
-        print("Writing transform to kitti odom file")
         out_file = self.odom_file
 
         kitti_line = transform_matrix[:3, :].reshape(12)
@@ -131,10 +128,8 @@ class Benchmarker:
         transform: TransformStamped = data.transforms[0]
 
         if transform.header.frame_id == "odom" and transform.child_frame_id == "base_link":
-            print(f"RECEIVED ROBOT TRANSFORM {len(self.transformations)}")
             self.transformations.append(transform)
         elif transform.header.frame_id == "world" and transform.child_frame_id == "odom":
-            print(f"RECEIVED ODOM TRANSFORM {len(self.transformations)}")
             if len(self.transformations) == 0:
                 self.transformations.append(transform)
             elif self.transformations[-1].header.frame_id == "odom":
@@ -191,7 +186,6 @@ class Benchmarker:
         if self.generate_gt:
             self.gt_file.close()
         else:
-            print(f"Opening kitti_odom_file in {self.kitti_path}")
             self.odom_file = open(self.kitti_path + "odom.txt", 'w')
             # Calculate all of the kitti lines (matrices)
             transform_matrices: List[np.ndarray] = self.generate_transform_matrices_from_transforms()
@@ -206,8 +200,6 @@ def main():
     try:
         Benchmarker()
     except rospy.ROSInterruptException:
-        print("BENCHMARKER: HANDLING EXCEPTION!")
-        Benchmarker.finish_benchmarking()
         print('\n')
 
 
