@@ -36,35 +36,9 @@ class BenchmarkerOffline:
         self.tf_listener = tf.TransformListener()
         self.odom_broadcaster = tf.TransformBroadcaster()
 
-        self.saved_initial_pose = False
-        self.publish_first_tf()
-
         rospy.on_shutdown(self.finish_benchmarking)
 
         rospy.spin()
-
-
-    def publish_first_tf(self) -> None:
-        timestamp = rospy.Time.now()
-
-        position = Point(rospy.get_param("initial_pos_x", "0"), rospy.get_param("initial_pos_y", "0"), 0)
-        orientation = quaternion_from_euler(0, 0, float(rospy.get_param("initial_pos_a", "0")))
-
-        self.odom_broadcaster.sendTransform(
-            (position.x, position.y, position.z),
-            orientation,
-            timestamp,
-            "base_link",
-            "odom"
-        )
-
-        self.odom_broadcaster.sendTransform(
-            (0, 0, 0),
-            quaternion_from_euler(0, 0, 0),
-            timestamp,
-            "laser_frame",
-            "base_link"
-        )
 
 
     def gt_write_kitti(self, data: Odometry) -> None:
@@ -96,32 +70,6 @@ class BenchmarkerOffline:
 
         out_file.write(kitti_line_string)
         out_file.write('\n')
-
-
-    def publish_odometry(self, transform: TransformStamped) -> None:
-        """ Publish the robot movement over tf for the SLAM algorithm to use it. """
-        self.odom_broadcaster.sendTransform(
-            (transform.transform.translation.x, transform.transform.translation.y, 0.),
-            (0, 0, transform.transform.rotation.z, transform.transform.rotation.w),
-            transform.header.stamp,
-            "base_link",
-            "odom"
-        )
-
-        self.odom_broadcaster.sendTransform(
-            (0, 0, 0),
-            quaternion_from_euler(0, 0, 0),
-            transform.header.stamp,
-            "laser_frame",
-            "base_link"
-        )
-
-
-    def handle_get_tf_old(self, data: TFMessage) -> None:
-        transform: TransformStamped = data.transforms[0]
-
-        if transform.header.frame_id == "odom" and transform.child_frame_id == "base_link":
-            self.publish_odometry(transform)
 
 
     def handle_get_tf(self, data: TFMessage) -> None:

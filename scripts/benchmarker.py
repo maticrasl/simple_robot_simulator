@@ -36,10 +36,9 @@ class Benchmarker:
         self.tf_listener = tf.TransformListener()
         self.odom_broadcaster = tf.TransformBroadcaster()
 
-        self.saved_initial_pose = False
-        self.publish_first_tf()
-
         rospy.on_shutdown(self.finish_benchmarking)
+
+        self.publish_first_tf()
 
         rospy.spin()
 
