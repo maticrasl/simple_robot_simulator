@@ -4,7 +4,7 @@ import rospy
 import math
 import numpy as np
 
-from geometry_msgs.msg import Point, Quaternion, TransformStamped, Vector3
+from geometry_msgs.msg import Point, TransformStamped, Vector3
 from nav_msgs.msg import Odometry
 import os
 import tf
