@@ -30,7 +30,6 @@ class BenchmarkerOffline:
             self.gt_file = open(self.kitti_path + "ground_truth.txt", 'w')
             rospy.Subscriber('/ground_truth', Odometry, self.gt_write_kitti, queue_size=50)
         else:
-            rospy.Subscriber('/tf_old', TFMessage, self.handle_get_tf_old, queue_size=50)
             rospy.Subscriber('/tf', TFMessage, self.handle_get_tf, queue_size=50)
 
         self.tf_listener = tf.TransformListener()
